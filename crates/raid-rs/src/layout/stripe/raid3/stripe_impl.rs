@@ -19,7 +19,7 @@ impl<const D: usize, const N: usize> Stripe<D, N> for RAID3<D, N> {
         }
         self.write_parity();
     }
-    
+
     fn write_raw(&mut self, data: &[Bits<N>]) {
         assert_eq!(
             data.len(),
