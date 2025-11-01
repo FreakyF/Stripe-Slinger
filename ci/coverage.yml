@@ -1,13 +1,13 @@
 coverage-lib:
   stage: coverage
-  image: docker.io/xd009642/tarpaulin:0.34.1
-  services: []
+  image: rust:1.85
   script:
-    - cargo tarpaulin -p raid-rs --all-features --fail-under 80
+    - cargo install cargo-llvm-cov --locked || true
+    - cargo llvm-cov --package raid-rs --all-features --fail-under-lines 80
 
 coverage-app:
   stage: coverage
-  image: docker.io/xd009642/tarpaulin:0.34.1
-  services: []
+  image: rust:1.85
   script:
-    - cargo tarpaulin -p raid-cli --all-features --fail-under 60
+    - cargo install cargo-llvm-cov --locked || true
+    - cargo llvm-cov --package raid-cli --all-features --fail-under-lines 60
