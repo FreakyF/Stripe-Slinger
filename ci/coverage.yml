@@ -6,9 +6,9 @@ coverage-lib:
       artifacts: true
   script:
     - rustup component add llvm-tools-preview
-    - export RUST_SYSROOT="$(rustc --print sysroot)"
-    - export RUST_TARGET="$(rustc -vV | grep host | cut -d: -f2 | xargs)"
-    - export LLVM_BIN="$RUST_SYSROOT/lib/rustlib/$RUST_TARGET/bin"
+    - RUST_SYSROOT="$(rustc --print sysroot)"
+    - RUST_TARGET="$(rustc -vV | grep host | cut -d: -f2 | xargs)"
+    - LLVM_BIN="$RUST_SYSROOT/lib/rustlib/$RUST_TARGET/bin"
     - $LLVM_BIN/llvm-profdata merge -sparse coverage-*.profraw -o coverage.profdata
     - $LLVM_BIN/llvm-cov report --ignore-filename-regex='/.cargo/|/rustc/' target/debug/deps/raid_rs-* --instr-profile=coverage.profdata
 
@@ -20,8 +20,9 @@ coverage-app:
       artifacts: true
   script:
     - rustup component add llvm-tools-preview
-    - export RUST_SYSROOT="$(rustc --print sysroot)"
-    - export RUST_TARGET="$(rustc -vV | grep host | cut -d: -f2 | xargs)"
-    - export LLVM_BIN="$RUST_SYSROOT/lib/rustlib/$RUST_TARGET/bin"
+    - RUST_SYSROOT="$(rustc --print sysroot)"
+    - RUST_TARGET="$(rustc -vV | grep host | cut -d: -f2 | xargs)"
+    - LLVM_BIN="$RUST_SYSROOT/lib/rustlib/$RUST_TARGET/bin"
     - $LLVM_BIN/llvm-profdata merge -sparse coverage-*.profraw -o coverage.profdata
     - $LLVM_BIN/llvm-cov report --ignore-filename-regex='/.cargo/|/rustc/' target/debug/deps/raid_cli-* --instr-profile=coverage.profdata
+tr-profile=coverage.profdata
