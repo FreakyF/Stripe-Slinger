@@ -12,10 +12,10 @@ coverage-lib:
       RUST_TARGET="$(rustc -vV | grep host | cut -d: -f2 | xargs)"
       LLVM_BIN="$RUST_SYSROOT/lib/rustlib/$RUST_TARGET/bin"
       "$LLVM_BIN/llvm-profdata" merge -sparse coverage-*.profraw -o coverage.profdata
-      # bierz wszystkie testowe binarki z deps
-      "$LLVM_BIN/llvm-cov" report \
+      # wybierz tylko wykonywalne pliki
+      BINS=$(find target/debug/deps -maxdepth 1 -type f -executable)
+      echo "$BINS" | xargs "$LLVM_BIN/llvm-cov" report \
         --ignore-filename-regex='/.cargo/|/rustc/' \
-        target/debug/deps/* \
         --instr-profile=coverage.profdata
 
 coverage-app:
@@ -32,7 +32,7 @@ coverage-app:
       RUST_TARGET="$(rustc -vV | grep host | cut -d: -f2 | xargs)"
       LLVM_BIN="$RUST_SYSROOT/lib/rustlib/$RUST_TARGET/bin"
       "$LLVM_BIN/llvm-profdata" merge -sparse coverage-*.profraw -o coverage.profdata
-      "$LLVM_BIN/llvm-cov" report \
+      BINS=$(find target/debug/deps -maxdepth 1 -type f -executable)
+      echo "$BINS" | xargs "$LLVM_BIN/llvm-cov" report \
         --ignore-filename-regex='/.cargo/|/rustc/' \
-        target/debug/deps/* \
         --instr-profile=coverage.profdata
