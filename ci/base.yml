@@ -4,7 +4,6 @@ stages:
   - coverage
   - build
   - push
-  - e2e
 
 variables:
   CARGO_TERM_COLOR: always

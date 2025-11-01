@@ -7,6 +7,3 @@
 
 ## Details
 - 
-
-Closes #
-
