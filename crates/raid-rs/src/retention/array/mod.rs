@@ -12,7 +12,7 @@ impl<const D: usize, const N: usize> Array<D, N> {
         let array: [Disk; D] =
             std::array::from_fn(|i| Disk::open_prealloc(&paths[i], 1024).unwrap());
 
-        Self { 0: array }
+        Self(array)
     }
 
     pub fn write<T: Stripe<D, N>>(&mut self, off: u64, stripe: &T) {
