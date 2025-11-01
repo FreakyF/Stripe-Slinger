@@ -10,14 +10,14 @@ test:
     - |
       cat > .config/nextest.toml <<'EOF'
       [profile.ci.junit]
-      path = "target/nextest/ci/junit.xml"
+      path = "junit.xml"
       store-success-output = true
       store-failure-output = true
       EOF
     - cargo nextest run --workspace --all-features --profile ci
   artifacts:
     reports:
-      junit: target/nextest/ci/junit.xml
+      junit: junit.xml
     paths:
       - coverage-*.profraw
       - target/debug/
