@@ -7,20 +7,16 @@ stages:
 
 variables:
   CARGO_TERM_COLOR: always
-  DOCKER_DRIVER: overlay2
   CI_REGISTRY: registry.gitlab.com
   CI_REGISTRY_IMAGE: registry.gitlab.com/POnB/stripe-slinger
   RUSTFLAGS: "-C debuginfo=2"
 
 default:
   image: rust:1.85
-  services:
-    - name: docker:25-dind
-      command: ["--tls=false"]
   tags:
     - docker
   before_script:
-    - apt-get update && apt-get install -y pkg-config libssl-dev jq docker.io
+    - apt-get update && apt-get install -y pkg-config libssl-dev jq
     - rustup component add rustfmt clippy
     - rustc --version
     - cargo --version

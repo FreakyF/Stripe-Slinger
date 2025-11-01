@@ -3,6 +3,10 @@ docker-build:
   needs:
     - coverage-lib
     - coverage-app
+  image: docker:25
+  services:
+    - name: docker:25-dind
+      command: ["--tls=false"]
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
@@ -12,6 +16,10 @@ docker-build:
 docker-push:
   stage: push
   needs: ["docker-build"]
+  image: docker:25
+  services:
+    - name: docker:25-dind
+      command: ["--tls=false"]
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
