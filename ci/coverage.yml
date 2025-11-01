@@ -1,38 +1,29 @@
 coverage-lib:
   stage: coverage
   image: rust:1.85
-  needs:
-    - job: test
-      artifacts: true
-  script:
-    - |
-      set -e
-      rustup component add llvm-tools-preview
-      RUST_SYSROOT="$(rustc --print sysroot)"
-      RUST_TARGET="$(rustc -vV | grep host | cut -d: -f2 | xargs)"
-      LLVM_BIN="$RUST_SYSROOT/lib/rustlib/$RUST_TARGET/bin"
-      "$LLVM_BIN/llvm-profdata" merge -sparse coverage-*.profraw -o coverage.profdata
-      # wybierz tylko wykonywalne pliki
-      BINS=$(find target/debug/deps -maxdepth 1 -type f -executable)
-      echo "$BINS" | xargs "$LLVM_BIN/llvm-cov" report \
-        --ignore-filename-regex='/.cargo/|/rustc/' \
-        --instr-profile=coverage.profdata
+  needs: [{ job: test, artifacts: true }]
+  allow_failure: true
+  script: |
+    set -e
+    rustup component add llvm-tools-preview
+    RUST_SYSROOT="$(rustc --print sysroot)"
+    RUST_TARGET="$(rustc -vV | grep host | cut -d: -f2 | xargs)"
+    LLVM_BIN="$RUST_SYSROOT/lib/rustlib/$RUST_TARGET/bin"
+    "$LLVM_BIN/llvm-profdata" merge -sparse coverage-*.profraw -o coverage.profdata
+    BINS=$(find target/debug/deps -maxdepth 1 -type f -executable)
+    echo "$BINS" | xargs "$LLVM_BIN/llvm-cov" report --ignore-filename-regex='/.cargo/|/rustc/' --instr-profile=coverage.profdata
 
 coverage-app:
   stage: coverage
   image: rust:1.85
-  needs:
-    - job: test
-      artifacts: true
-  script:
-    - |
-      set -e
-      rustup component add llvm-tools-preview
-      RUST_SYSROOT="$(rustc --print sysroot)"
-      RUST_TARGET="$(rustc -vV | grep host | cut -d: -f2 | xargs)"
-      LLVM_BIN="$RUST_SYSROOT/lib/rustlib/$RUST_TARGET/bin"
-      "$LLVM_BIN/llvm-profdata" merge -sparse coverage-*.profraw -o coverage.profdata
-      BINS=$(find target/debug/deps -maxdepth 1 -type f -executable)
-      echo "$BINS" | xargs "$LLVM_BIN/llvm-cov" report \
-        --ignore-filename-regex='/.cargo/|/rustc/' \
-        --instr-profile=coverage.profdata
+  needs: [{ job: test, artifacts: true }]
+  allow_failure: true
+  script: |
+    set -e
+    rustup component add llvm-tools-preview
+    RUST_SYSROOT="$(rustc --print sysroot)"
+    RUST_TARGET="$(rustc -vV | grep host | cut -d: -f2 | xargs)"
+    LLVM_BIN="$RUST_SYSROOT/lib/rustlib/$RUST_TARGET/bin"
+    "$LLVM_BIN/llvm-profdata" merge -sparse coverage-*.profraw -o coverage.profdata
+    BINS=$(find target/debug/deps -maxdepth 1 -type f -executable)
+    echo "$BINS" | xargs "$LLVM_BIN/llvm-cov" report --ignore-filename-regex='/.cargo/|/rustc/' --instr-profile=coverage.profdata

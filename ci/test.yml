@@ -3,12 +3,15 @@ test:
   needs: ["clippy"]
   image: rust:1.85
   script:
+    - cargo install cargo2junit --locked || true
     - export RUSTFLAGS="-C instrument-coverage"
     - export LLVM_PROFILE_FILE="$CI_PROJECT_DIR/coverage-%p-%m.profraw"
-    - cargo test --workspace --all-features -- --nocapture
+    - cargo test --workspace --all-features -- --format=json > results.json
+    - cat results.json | cargo2junit > junit.xml
   artifacts:
+    reports:
+      junit: junit.xml
     paths:
       - coverage-*.profraw
       - target/debug/
     expire_in: 1 day
-
