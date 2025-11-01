@@ -25,4 +25,3 @@ coverage-app:
     - export LLVM_BIN="$RUST_SYSROOT/lib/rustlib/$RUST_TARGET/bin"
     - "$LLVM_BIN/llvm-profdata" merge -sparse coverage-*.profraw -o coverage.profdata
     - "$LLVM_BIN/llvm-cov" report --ignore-filename-regex='/.cargo/|/rustc/' "target/debug/deps/raid_cli-*" --instr-profile=coverage.profdata
-
