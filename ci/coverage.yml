@@ -5,9 +5,12 @@ coverage-lib:
     - job: test
       artifacts: true
   script:
-    - apt-get update && apt-get install -y llvm
-    - llvm-profdata merge -sparse coverage-*.profraw -o coverage.profdata
-    - llvm-cov report \
+    - rustup component add llvm-tools-preview
+    - SYSROOT=$(rustc --print sysroot)
+    - HOST=$(rustc -vV | grep host | cut -d: -f2 | xargs)
+    - LLVM_BIN="$SYSROOT/lib/rustlib/$HOST/bin"
+    - "$LLVM_BIN/llvm-profdata" merge -sparse coverage-*.profraw -o coverage.profdata
+    - "$LLVM_BIN/llvm-cov" report \
         --ignore-filename-regex='/.cargo/|/rustc/' \
         target/debug/deps/raid_rs-* \
         --instr-profile=coverage.profdata
@@ -19,9 +22,12 @@ coverage-app:
     - job: test
       artifacts: true
   script:
-    - apt-get update && apt-get install -y llvm
-    - llvm-profdata merge -sparse coverage-*.profraw -o coverage.profdata
-    - llvm-cov report \
+    - rustup component add llvm-tools-preview
+    - SYSROOT=$(rustc --print sysroot)
+    - HOST=$(rustc -vV | grep host | cut -d: -f2 | xargs)
+    - LLVM_BIN="$SYSROOT/lib/rustlib/$HOST/bin"
+    - "$LLVM_BIN/llvm-profdata" merge -sparse coverage-*.profraw -o coverage.profdata
+    - "$LLVM_BIN/llvm-cov" report \
         --ignore-filename-regex='/.cargo/|/rustc/' \
         target/debug/deps/raid_cli-* \
         --instr-profile=coverage.profdata
