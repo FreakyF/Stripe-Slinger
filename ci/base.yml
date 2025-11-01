@@ -3,20 +3,36 @@ stages:
   - test
   - coverage
   - build
-  - push
+  # - push
+  - meta
 
 variables:
   CARGO_TERM_COLOR: always
   CI_REGISTRY: registry.gitlab.com
   CI_REGISTRY_IMAGE: registry.gitlab.com/ponb/stripe-slinger
-  RUSTFLAGS: "-C debuginfo=2"
+  CI_RUST_IMAGE: "$CI_REGISTRY_IMAGE/ci:rust-1.85"
+
+.code_changes: &code_changes
+  changes:
+    - "**/*.rs"
+    - "**/Cargo.toml"
+    - "**/Cargo.lock"
+    - Dockerfile
+    - .gitlab-ci.yml
+    - ci/**/*
 
 default:
-  image: rust:1.85
+  image: $CI_RUST_IMAGE
   tags:
     - docker
+  interruptible: true
+  cache:
+    key: "rust-${CI_COMMIT_REF_SLUG}"
+    policy: pull-push
+    paths:
+      - target
+      - .cargo/registry
+      - .cargo/git
   before_script:
-    - apt-get update && apt-get install -y pkg-config libssl-dev jq
-    - rustup component add rustfmt clippy
     - rustc --version
     - cargo --version

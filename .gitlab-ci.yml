@@ -1,6 +1,16 @@
 include:
-  - local: 'ci/base.yml'
-  - local: 'ci/lint.yml'
-  - local: 'ci/test.yml'
-  - local: 'ci/coverage.yml'
-  - local: 'ci/image.yml'
+  - local: "ci/base.yml"
+  - local: "ci/lint.yml"
+  - local: "ci/test.yml"
+  - local: "ci/quality.yml"
+  # - local: "ci/image.yml"
+  - local: "ci/ci-image.yml"
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - "docs/**/*"
+        - "README.md"
+      when: never
+    - when: always

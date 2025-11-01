@@ -1,25 +1,48 @@
-test:
+.test_template:
   stage: test
-  needs: ["clippy"]
-  image: rust:1.85
   script:
-    - cargo install cargo-nextest --locked --version 0.9.100 || true
-    - export RUSTFLAGS="-C instrument-coverage"
-    - export LLVM_PROFILE_FILE="$CI_PROJECT_DIR/coverage-%p-%m.profraw"
-    - mkdir -p .config
-    - |
-      cat > .config/nextest.toml <<'EOF'
-      [profile.ci.junit]
-      path = "junit.xml"
-      store-success-output = true
-      store-failure-output = true
-      EOF
-    - cargo nextest run --workspace --all-features --profile ci
+    - mkdir -p target/nextest/ci
+    # każdy shard odpala tylko kawałek testów
+    - cargo llvm-cov nextest \
+        --workspace --all-features \
+        --no-report \
+        --partition count:2:${SHARD} \
+        -- --junit target/nextest/ci/junit-${SHARD}.xml
   artifacts:
     reports:
-      junit: target/nextest/ci/junit.xml
+      junit: target/nextest/ci/junit-${SHARD}.xml
     paths:
-      - coverage-*.profraw
-      - target/debug/
-      - target/nextest/ci/junit.xml
+      - target/llvm-cov-${SHARD}/
+      - target/nextest/ci/junit-${SHARD}.xml
     expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
+      <<: *code_changes
+
+test:shard-0:
+  extends: .test_template
+  variables:
+    SHARD: "0"
+  script:
+    - mkdir -p target/llvm-cov-0
+    - cargo llvm-cov nextest \
+        --workspace --all-features \
+        --no-report \
+        --output-path target/llvm-cov-0 \
+        --partition count:2:0 \
+        -- --junit target/nextest/ci/junit-0.xml
+
+test:shard-1:
+  extends: .test_template
+  variables:
+    SHARD: "1"
+  script:
+    - mkdir -p target/llvm-cov-1
+    - cargo llvm-cov nextest \
+        --workspace --all-features \
+        --no-report \
+        --output-path target/llvm-cov-1 \
+        --partition count:2:1 \
+        -- --junit target/nextest/ci/junit-1.xml

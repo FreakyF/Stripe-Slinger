@@ -1,0 +1,22 @@
+ci-image:build:
+  stage: meta
+  image: docker:25
+  services:
+    - name: docker:25-dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker build -f ci/Dockerfile.ci -t "$CI_REGISTRY_IMAGE/ci:rust-1.85" .
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker push "$CI_REGISTRY_IMAGE/ci:rust-1.85"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      changes:
+        - ci/Dockerfile.ci
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: manual
+      allow_failure: true
+  cache: []
+  before_script: []

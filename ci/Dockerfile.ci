@@ -1,0 +1,17 @@
+FROM rust:1.85
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        pkg-config \
+        libssl-dev \
+        ca-certificates \
+        jq \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN rustup component add rustfmt clippy llvm-tools-preview
+
+RUN cargo install cargo-nextest --locked --version 0.9.100 \
+    && cargo install cargo-llvm-cov --locked \
+    && cargo install cargo-audit --locked
+
+WORKDIR /build
