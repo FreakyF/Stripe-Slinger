@@ -19,7 +19,7 @@ docker-push:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
     - docker push "$CI_REGISTRY_IMAGE:ci-$CI_COMMIT_SHORT_SHA"
     - |
-      if [ "$CI_COMMIT_BRANCH" = "main" ]; then
+      if [ "$CI_COMMIT_BRANCH" = "master" ]; then
         docker tag "$CI_REGISTRY_IMAGE:ci-$CI_COMMIT_SHORT_SHA" "$CI_REGISTRY_IMAGE:latest"
         docker push "$CI_REGISTRY_IMAGE:latest"
       fi

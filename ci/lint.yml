@@ -1,13 +1,13 @@
 fmt:
   stage: lint
   script:
-    - cargo +nightly fmt --all -- --check
+    - cargo fmt --all -- --check
 
 clippy:
   stage: lint
   script:
     - |
-      cargo +nightly clippy --workspace --all-targets --all-features -- \
+      cargo clippy --workspace --all-targets --all-features -- \
         -D clippy::correctness \
         -D clippy::suspicious \
         -A dead_code \

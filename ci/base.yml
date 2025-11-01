@@ -13,7 +13,7 @@ variables:
   RUSTFLAGS: "-C debuginfo=2"
 
 default:
-  image: rust:1.80
+  image: rust:1.85
   services:
     - name: docker:25-dind
       command: ["--tls=false"]
@@ -21,7 +21,6 @@ default:
     - docker
   before_script:
     - apt-get update && apt-get install -y pkg-config libssl-dev jq docker.io
-    - rustup toolchain install nightly --component rustfmt clippy
-    - rustup default nightly
+    - rustup component add rustfmt clippy
     - rustc --version
     - cargo --version

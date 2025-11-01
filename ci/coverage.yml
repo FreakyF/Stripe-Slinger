@@ -1,11 +1,11 @@
 coverage-lib:
   stage: coverage
+  image: ghcr.io/xd009642/tarpaulin:0.34.1
   script:
-    - cargo install cargo-tarpaulin --locked || true
     - cargo tarpaulin -p raid-rs --all-features --fail-under 80
 
 coverage-app:
   stage: coverage
+  image: ghcr.io/xd009642/tarpaulin:0.34.1
   script:
-    - cargo install cargo-tarpaulin --locked || true
     - cargo tarpaulin -p raid-cli --all-features --fail-under 60
