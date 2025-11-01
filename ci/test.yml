@@ -6,15 +6,7 @@ test:
     - cargo install cargo-nextest --locked --version 0.9.100 || true
     - export RUSTFLAGS="-C instrument-coverage"
     - export LLVM_PROFILE_FILE="$CI_PROJECT_DIR/coverage-%p-%m.profraw"
-    - mkdir -p .config
-    - |
-      cat > .config/nextest.toml <<'EOF'
-      [profile.ci.junit]
-      path = "junit.xml"
-      store-success-output = true
-      store-failure-output = true
-      EOF
-    - cargo nextest run --workspace --all-features --profile ci
+    - cargo nextest run --workspace --all-features --profile ci --junit-output junit.xml
   artifacts:
     reports:
       junit: junit.xml
