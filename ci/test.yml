@@ -4,10 +4,11 @@ test:
   image: rust:1.85
   script:
     - export RUSTFLAGS="-C instrument-coverage"
-    - export LLVM_PROFILE_FILE="coverage-%p-%m.profraw"
+    - export LLVM_PROFILE_FILE="$CI_PROJECT_DIR/coverage-%p-%m.profraw"
     - cargo test --workspace --all-features -- --nocapture
   artifacts:
     paths:
       - coverage-*.profraw
       - target/debug/
     expire_in: 1 day
+
