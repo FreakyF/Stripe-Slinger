@@ -2,8 +2,7 @@ coverage-lib:
   stage: coverage
   image: rust:1.85
   needs:
-    - job: test
-      artifacts: true
+    - { job: test, artifacts: true }
   script:
     - rustup component add llvm-tools-preview
     - SYSROOT=$(rustc --print sysroot)
@@ -16,8 +15,7 @@ coverage-app:
   stage: coverage
   image: rust:1.85
   needs:
-    - job: test
-      artifacts: true
+    - { job: test, artifacts: true }
   script:
     - rustup component add llvm-tools-preview
     - SYSROOT=$(rustc --print sysroot)
