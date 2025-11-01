@@ -6,8 +6,9 @@ test:
     - cargo install cargo2junit --locked || true
     - export RUSTFLAGS="-C instrument-coverage"
     - export LLVM_PROFILE_FILE="$CI_PROJECT_DIR/coverage-%p-%m.profraw"
-    - set -o pipefail
-    - cargo test --workspace --all-features -- --nocapture | cargo2junit > junit.xml
+    - cargo test --workspace --all-features --message-format json > results.json || export TEST_EXIT=$?
+    - cat results.json | cargo2junit > junit.xml || true
+    - exit ${TEST_EXIT:-0}
   artifacts:
     reports:
       junit: junit.xml
