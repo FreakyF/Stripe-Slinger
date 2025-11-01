@@ -8,7 +8,7 @@ stages:
 variables:
   CARGO_TERM_COLOR: always
   CI_REGISTRY: registry.gitlab.com
-  CI_REGISTRY_IMAGE: registry.gitlab.com/POnB/stripe-slinger
+  CI_REGISTRY_IMAGE: registry.gitlab.com/ponb/stripe-slinger
   RUSTFLAGS: "-C debuginfo=2"
 
 default:
