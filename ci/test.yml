@@ -3,14 +3,14 @@ test:
   needs: ["clippy"]
   image: rust:1.85
   script:
-    - cargo install cargo-nextest --locked || true
+    - cargo install cargo-nextest --locked --version 0.9.100 || true
     - export RUSTFLAGS="-C instrument-coverage"
     - export LLVM_PROFILE_FILE="$CI_PROJECT_DIR/coverage-%p-%m.profraw"
     - mkdir -p .config
     - |
       cat > .config/nextest.toml <<'EOF'
       [profile.ci.junit]
-      path = "junit.xml"
+      path = "target/nextest/ci/junit.xml"
       store-success-output = true
       store-failure-output = true
       EOF
