@@ -3,15 +3,21 @@ test:
   needs: ["clippy"]
   image: rust:1.85
   script:
-    - cargo install cargo2junit --locked || true
+    - cargo install cargo-nextest --locked || true
     - export RUSTFLAGS="-C instrument-coverage"
     - export LLVM_PROFILE_FILE="$CI_PROJECT_DIR/coverage-%p-%m.profraw"
-    - cargo test --workspace --all-features --message-format json > results.json || export TEST_EXIT=$?
-    - cat results.json | cargo2junit > junit.xml || true
-    - exit ${TEST_EXIT:-0}
+    - mkdir -p .config
+    - |
+      cat > .config/nextest.toml <<'EOF'
+      [profile.ci.junit]
+      path = "junit.xml"
+      store-success-output = true
+      store-failure-output = true
+      EOF
+    - cargo nextest run --workspace --all-features --profile ci
   artifacts:
     reports:
-      junit: junit.xml
+      junit: target/nextest/ci/junit.xml
     paths:
       - coverage-*.profraw
       - target/debug/
