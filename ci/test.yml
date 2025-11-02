@@ -1,6 +1,6 @@
 .test-template:
   extends: .rust-changes
-  stage: test
+  stage: lint
   artifacts:
     expire_in: 1 day
 
