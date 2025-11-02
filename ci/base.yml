@@ -2,8 +2,7 @@ stages:
   - lint        
   - coverage    
   - build       
-  - push        
-  - meta       
+  - push            
 
 variables:
   CARGO_TERM_COLOR: always
