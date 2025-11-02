@@ -1,31 +1,10 @@
-.test_template:
-  stage: test
-  script:
-    - mkdir -p target/nextest/ci
-    # każdy shard odpala tylko kawałek testów
-    - cargo llvm-cov nextest \
-        --workspace --all-features \
-        --no-report \
-        --partition count:2:${SHARD} \
-        -- --junit target/nextest/ci/junit-${SHARD}.xml
-  artifacts:
-    reports:
-      junit: target/nextest/ci/junit-${SHARD}.xml
-    paths:
-      - target/llvm-cov-${SHARD}/
-      - target/nextest/ci/junit-${SHARD}.xml
-    expire_in: 1 day
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
-      <<: *code_changes
-
 test:shard-0:
-  extends: .test_template
+  extends: .rust-changes
+  stage: test
   variables:
     SHARD: "0"
   script:
+    - mkdir -p target/nextest/ci
     - mkdir -p target/llvm-cov-0
     - cargo llvm-cov nextest \
         --workspace --all-features \
@@ -33,12 +12,21 @@ test:shard-0:
         --output-path target/llvm-cov-0 \
         --partition count:2:0 \
         -- --junit target/nextest/ci/junit-0.xml
+  artifacts:
+    reports:
+      junit: target/nextest/ci/junit-0.xml
+    paths:
+      - target/llvm-cov-0/
+      - target/nextest/ci/junit-0.xml
+    expire_in: 1 day
 
 test:shard-1:
-  extends: .test_template
+  extends: .rust-changes
+  stage: test
   variables:
     SHARD: "1"
   script:
+    - mkdir -p target/nextest/ci
     - mkdir -p target/llvm-cov-1
     - cargo llvm-cov nextest \
         --workspace --all-features \
@@ -46,3 +34,10 @@ test:shard-1:
         --output-path target/llvm-cov-1 \
         --partition count:2:1 \
         -- --junit target/nextest/ci/junit-1.xml
+  artifacts:
+    reports:
+      junit: target/nextest/ci/junit-1.xml
+    paths:
+      - target/llvm-cov-1/
+      - target/nextest/ci/junit-1.xml
+    expire_in: 1 day

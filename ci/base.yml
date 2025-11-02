@@ -3,7 +3,7 @@ stages:
   - test
   - coverage
   - build
-  # - push
+  - push
   - meta
 
 variables:
@@ -11,20 +11,11 @@ variables:
   CI_REGISTRY: registry.gitlab.com
   CI_REGISTRY_IMAGE: registry.gitlab.com/ponb/stripe-slinger
   CI_RUST_IMAGE: "$CI_REGISTRY_IMAGE/ci:rust-1.85"
-
-.code_changes: &code_changes
-  changes:
-    - "**/*.rs"
-    - "**/Cargo.toml"
-    - "**/Cargo.lock"
-    - Dockerfile
-    - .gitlab-ci.yml
-    - ci/**/*
+  RUSTFLAGS: "-C debuginfo=2"
 
 default:
   image: $CI_RUST_IMAGE
-  tags:
-    - docker
+  tags: [docker]
   interruptible: true
   cache:
     key: "rust-${CI_COMMIT_REF_SLUG}"
@@ -36,3 +27,16 @@ default:
   before_script:
     - rustc --version
     - cargo --version
+
+.rust-changes:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
+      changes:
+        - "**/*.rs"
+        - "**/Cargo.toml"
+        - "**/Cargo.lock"
+        - Dockerfile
+        - .gitlab-ci.yml
+        - ci/**/*
