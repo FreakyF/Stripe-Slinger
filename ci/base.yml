@@ -1,6 +1,5 @@
 stages:
   - lint
-  - test
   - coverage
   - build
   - push
@@ -10,11 +9,11 @@ variables:
   CARGO_TERM_COLOR: always
   CI_REGISTRY: registry.gitlab.com
   CI_REGISTRY_IMAGE: registry.gitlab.com/ponb/stripe-slinger
-  CI_RUST_IMAGE: "$CI_REGISTRY_IMAGE/ci:rust-1.85"
+  CI_RUST_IMAGE: "registry.gitlab.com/ponb/stripe-slinger/ci:rust-1.85"
   RUSTFLAGS: "-C debuginfo=2"
 
 default:
-  image: $CI_RUST_IMAGE
+  image: ${CI_RUST_IMAGE:-rust:1.85}
   tags: [docker]
   interruptible: true
   cache:
@@ -25,6 +24,12 @@ default:
       - .cargo/registry
       - .cargo/git
   before_script:
+    - if ! command -v pkg-config >/dev/null; then apt-get update && apt-get install -y pkg-config libssl-dev jq; fi
+    - if ! rustup component list | grep -q 'rustfmt (installed)'; then rustup component add rustfmt; fi
+    - if ! rustup component list | grep -q 'clippy (installed)'; then rustup component add clippy; fi
+    - if ! command -v cargo-llvm-cov >/dev/null; then cargo install cargo-llvm-cov --locked; fi
+    - if ! command -v cargo-nextest >/dev/null; then cargo install cargo-nextest --locked --version 0.9.100; fi
+    - if ! command -v cargo-audit >/dev/null; then cargo install cargo-audit --locked; fi
     - rustc --version
     - cargo --version
 

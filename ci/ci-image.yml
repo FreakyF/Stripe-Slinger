@@ -7,6 +7,8 @@ ci-image:build:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
+  cache: []
+  before_script: []
   script:
     - docker build -f ci/Dockerfile.ci -t "$CI_REGISTRY_IMAGE/ci:rust-1.85" .
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
@@ -18,5 +20,3 @@ ci-image:build:
     - if: '$CI_PIPELINE_SOURCE == "web"'
       when: manual
       allow_failure: true
-  cache: []
-  before_script: []

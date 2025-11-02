@@ -1,8 +1,6 @@
 test:shard-0:
   extends: .rust-changes
-  stage: test
-  variables:
-    SHARD: "0"
+  stage: lint
   script:
     - mkdir -p target/nextest/ci
     - mkdir -p target/llvm-cov-0
@@ -22,9 +20,7 @@ test:shard-0:
 
 test:shard-1:
   extends: .rust-changes
-  stage: test
-  variables:
-    SHARD: "1"
+  stage: lint
   script:
     - mkdir -p target/nextest/ci
     - mkdir -p target/llvm-cov-1
