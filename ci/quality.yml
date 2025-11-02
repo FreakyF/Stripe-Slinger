@@ -1,4 +1,5 @@
 coverage-raid-rs:
+  extends: .rust-changes
   stage: coverage
   needs:
     - { job: test:shard-0, artifacts: true }
@@ -15,13 +16,11 @@ coverage-raid-rs:
     mkdir -p target/llvm-cov
     cp -r target/llvm-cov-0/* target/llvm-cov/ 2>/dev/null || true
     cp -r target/llvm-cov-1/* target/llvm-cov/ 2>/dev/null || true
-
     mkdir -p reports
     cargo llvm-cov report \
       --package raid-rs \
       --cobertura --output-path reports/coverage-raid-rs.xml \
       --ignore-filename-regex='/.cargo/|/rustc/'
-
     LINES=$(cargo llvm-cov report --package raid-rs --summary-only | awk '/^Lines:/ {gsub("%","",$2); print $2}')
     echo "raid-rs lines: ${LINES}%"
     THRESHOLD=75
@@ -36,16 +35,9 @@ coverage-raid-rs:
     paths:
       - reports/coverage-raid-rs.xml
     expire_in: 1 week
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-      allow_failure: true
-      <<: *code_changes
-    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
-      allow_failure: true
-      <<: *code_changes
 
 coverage-raid-cli:
+  extends: .rust-changes
   stage: coverage
   needs:
     - { job: test:shard-0, artifacts: true }
@@ -62,13 +54,11 @@ coverage-raid-cli:
     mkdir -p target/llvm-cov
     cp -r target/llvm-cov-0/* target/llvm-cov/ 2>/dev/null || true
     cp -r target/llvm-cov-1/* target/llvm-cov/ 2>/dev/null || true
-
     mkdir -p reports
     cargo llvm-cov report \
       --package raid-cli \
       --cobertura --output-path reports/coverage-raid-cli.xml \
       --ignore-filename-regex='/.cargo/|/rustc/'
-
     LINES=$(cargo llvm-cov report --package raid-cli --summary-only | awk '/^Lines:/ {gsub("%","",$2); print $2}')
     echo "raid-cli lines: ${LINES}%"
     THRESHOLD=50
@@ -83,16 +73,9 @@ coverage-raid-cli:
     paths:
       - reports/coverage-raid-cli.xml
     expire_in: 1 week
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-      allow_failure: true
-      <<: *code_changes
-    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
-      allow_failure: true
-      <<: *code_changes
 
 cargo-audit:
+  extends: .rust-changes
   stage: coverage
   needs:
     - test:shard-0
@@ -111,11 +94,3 @@ cargo-audit:
     paths:
       - reports/audit.json
     expire_in: 1 week
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-      allow_failure: true
-      <<: *code_changes
-    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
-      allow_failure: true
-      <<: *code_changes

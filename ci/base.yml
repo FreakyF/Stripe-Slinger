@@ -13,6 +13,19 @@ variables:
   CI_RUST_IMAGE: "$CI_REGISTRY_IMAGE/ci:rust-1.85"
   RUSTFLAGS: "-C debuginfo=2"
 
+.rust-changes:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
+      changes:
+        - "**/*.rs"
+        - "**/Cargo.toml"
+        - "**/Cargo.lock"
+        - Dockerfile
+        - .gitlab-ci.yml
+        - ci/**/*
+
 default:
   image: $CI_RUST_IMAGE
   tags:

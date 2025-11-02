@@ -1,15 +1,11 @@
-.test_template:
+.test-template:
+  extends: .rust-changes
   stage: test
   artifacts:
     expire_in: 1 day
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
-      <<: *code_changes
 
 test:shard-0:
-  extends: .test_template
+  extends: .test-template
   script:
     - mkdir -p target/nextest/ci
     - mkdir -p target/llvm-cov-0
@@ -27,7 +23,7 @@ test:shard-0:
       - target/nextest/ci/junit-0.xml
 
 test:shard-1:
-  extends: .test_template
+  extends: .test-template
   script:
     - mkdir -p target/nextest/ci
     - mkdir -p target/llvm-cov-1
