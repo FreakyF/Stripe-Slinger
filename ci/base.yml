@@ -1,20 +1,21 @@
 stages:
-  - lint
-  - coverage
-  - build
-  - push
-  - meta
+  - lint        
+  - coverage    
+  - build       
+  - push        
+  - meta       
 
 variables:
   CARGO_TERM_COLOR: always
   CI_REGISTRY: registry.gitlab.com
   CI_REGISTRY_IMAGE: registry.gitlab.com/ponb/stripe-slinger
-  CI_RUST_IMAGE: "registry.gitlab.com/ponb/stripe-slinger/ci:rust-1.85"
+  CI_RUST_IMAGE: "rust:1.85"
   RUSTFLAGS: "-C debuginfo=2"
 
 default:
-  image: ${CI_RUST_IMAGE:-rust:1.85}
-  tags: [docker]
+  image: $CI_RUST_IMAGE
+  tags:
+    - docker
   interruptible: true
   cache:
     key: "rust-${CI_COMMIT_REF_SLUG}"
