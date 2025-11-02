@@ -15,7 +15,10 @@ ci-image:build:
     - docker push "$CI_REGISTRY_IMAGE/ci:rust-1.85"
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
-      changes:
-        - ci/Dockerfile.ci
-    - when: manual
+      when: on_success
+    - if: '$CI_COMMIT_TAG'
+      when: on_success
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: manual
       allow_failure: true
+    - when: never
