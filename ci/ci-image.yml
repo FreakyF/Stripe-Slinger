@@ -14,9 +14,8 @@ ci-image:build:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
     - docker push "$CI_REGISTRY_IMAGE/ci:rust-1.85"
   rules:
-    - if: '$CI_COMMIT_BRANCH != "master"'
-      when: manual
-      allow_failure: true
     - if: '$CI_COMMIT_BRANCH == "master"'
       changes:
-        - ci/Dockerfile.ci'
+        - ci/Dockerfile.ci
+    - when: manual
+      allow_failure: true

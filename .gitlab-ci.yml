@@ -3,6 +3,8 @@ include:
   - local: "ci/lint.yml"
   - local: "ci/test.yml"
   - local: "ci/quality.yml"
+  - local: "ci/image.yml"
+  - local: "ci/ci-image.yml"
 
 workflow:
   rules:

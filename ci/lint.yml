@@ -1,11 +1,19 @@
 fmt:
-  extends: .rust-changes
   stage: lint
   script:
     - cargo fmt --all -- --check
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
+      <<: *code_changes
 
 clippy:
-  extends: .rust-changes
   stage: lint
   script:
     - cargo clippy --workspace --all-targets --all-features -- -D warnings
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
+      <<: *code_changes
