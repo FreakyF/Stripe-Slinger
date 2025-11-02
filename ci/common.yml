@@ -1,0 +1,8 @@
+.code_changes: &code_changes
+  changes:
+    - "**/*.rs"
+    - "**/Cargo.toml"
+    - "**/Cargo.lock"
+    - Dockerfile
+    - .gitlab-ci.yml
+    - ci/**/*
