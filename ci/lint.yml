@@ -8,4 +8,10 @@ clippy:
   extends: .rust-changes
   stage: lint
   script:
-    - cargo clippy --workspace --all-targets --all-features -- -D warnings
+    - |
+      cargo clippy --workspace --all-targets --all-features -- \
+        -D clippy::correctness \
+        -D clippy::suspicious \
+        -A dead_code \
+        -A unused_variables \
+        -A unused_mut

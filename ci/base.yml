@@ -24,7 +24,6 @@ variables:
         - "**/Cargo.lock"
         - Dockerfile
         - .gitlab-ci.yml
-        - ci/**/*
 
 default:
   image: $CI_RUST_IMAGE

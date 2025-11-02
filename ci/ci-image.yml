@@ -7,9 +7,16 @@ ci-image:build:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
+  rules:
+    - changes:
+        - ci/Dockerfile.ci
+        - ci/**/*
+    - when: never
   cache: []
   before_script: []
   script:
-    - docker build -f ci/Dockerfile.ci -t "$CI_REGISTRY_IMAGE/ci:rust-1.85" .
+    - docker build -f ci/Dockerfile.ci -t "$CI_REGISTRY_IMAGE/ci:rust-1.85-$CI_COMMIT_SHORT_SHA" .
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker push "$CI_REGISTRY_IMAGE/ci:rust-1.85-$CI_COMMIT_SHORT_SHA"
+    - docker tag "$CI_REGISTRY_IMAGE/ci:rust-1.85-$CI_COMMIT_SHORT_SHA" "$CI_REGISTRY_IMAGE/ci:rust-1.85"
     - docker push "$CI_REGISTRY_IMAGE/ci:rust-1.85"
