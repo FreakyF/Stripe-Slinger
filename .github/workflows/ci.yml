@@ -1,0 +1,217 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+      - 'feature/**'
+    tags:
+      - '*'
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+env:
+  CI_REGISTRY: ghcr.io
+  CI_GO_VERSION: "1.25"
+  CI_RUST_VERSION: "1.91"
+  RUSTFLAGS: "-C debuginfo=2"
+  GO_PROJECT_DIR: "services/metrics-gateway"
+  RUST_PROJECT_DIR: "services/raid-simulator"
+  CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+  CI_COMMIT_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+  CI_PIPELINE_SOURCE: ${{ github.event_name == 'pull_request' && 'merge_request_event' || (github.event_name == 'schedule' && 'schedule' || 'push') }}
+  CI_MERGE_REQUEST_TARGET_BRANCH_NAME: ${{ github.base_ref }}
+  CI_REGISTRY_USER: ${{ github.actor }}
+  CI_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+  CI_PROJECT_DIR: ${{ github.workspace }}
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      image_repo: ${{ steps.image_repo.outputs.repo }}
+      rust_image: ${{ steps.image_repo.outputs.repo }}/rust-runtime:rust-${{ env.CI_RUST_VERSION }}
+      go_image: ${{ steps.image_repo.outputs.repo }}/golang-runtime:go-${{ env.CI_GO_VERSION }}
+      rust: ${{ steps.changes.outputs.rust }}
+      go: ${{ steps.changes.outputs.go }}
+      runtime_image: ${{ steps.changes.outputs.runtime_image }}
+      go_runtime_image: ${{ steps.changes.outputs.go_runtime_image }}
+      any_code: ${{ steps.changes.outputs.rust == 'true' || steps.changes.outputs.go == 'true' || steps.changes.outputs.runtime_image == 'true' || steps.changes.outputs.go_runtime_image == 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine Image Repo
+        id: image_repo
+        run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "repo=ghcr.io/$REPO_LOWER" >> $GITHUB_OUTPUT
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            rust:
+              - 'services/raid-simulator/**/*.rs'
+              - 'services/raid-simulator/**/Cargo.toml'
+              - 'services/raid-simulator/**/Cargo.lock'
+              - 'services/raid-simulator/**/build.rs'
+              - 'services/raid-simulator/**/Dockerfile'
+              - 'services/raid-simulator/**/Makefile'
+              - 'services/raid-simulator/**/*.yml'
+              - 'services/raid-simulator/**/*.yaml'
+              - 'services/raid-simulator/**/*.json'
+            go:
+              - 'services/metrics-gateway/**/*.go'
+              - 'services/metrics-gateway/go.mod'
+              - 'services/metrics-gateway/go.sum'
+              - 'services/metrics-gateway/**/Dockerfile'
+              - 'services/metrics-gateway/**/Makefile'
+              - 'services/metrics-gateway/**/*.yml'
+              - 'services/metrics-gateway/**/*.yaml'
+              - 'services/metrics-gateway/**/*.json'
+            runtime_image:
+              - '.github/images/rust-runtime/Dockerfile'
+              - '.github/images/rust-runtime/**/*'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/shared/build-rust-runtime-image.sh'
+            go_runtime_image:
+              - '.github/images/golang-runtime/Dockerfile'
+              - '.github/images/golang-runtime/**/*'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/shared/build-golang-runtime-image.sh'
+
+  build-rust-runtime:
+    needs: setup
+    # Run always (unless cancelled), relying on script optimization
+    runs-on: ubuntu-latest
+    env:
+      CI_REGISTRY_IMAGE: ${{ needs.setup.outputs.image_repo }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: .github/scripts/shared/build-rust-runtime-image.sh
+
+  build-go-runtime:
+    needs: setup
+    # Run always (unless cancelled), relying on script optimization
+    runs-on: ubuntu-latest
+    env:
+      CI_REGISTRY_IMAGE: ${{ needs.setup.outputs.image_repo }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: .github/scripts/shared/build-golang-runtime-image.sh
+
+  check-rust:
+    needs: [setup, build-rust-runtime]
+    if: needs.setup.outputs.rust == 'true' && !failure() && !cancelled()
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ needs.setup.outputs.rust_image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustc --version && cargo --version
+      - run: .github/scripts/raid-simulator/fmt.sh
+      - run: .github/scripts/raid-simulator/clippy.sh
+      - run: .github/scripts/raid-simulator/tests.sh
+      - run: .github/scripts/raid-simulator/audit.sh
+      - run: .github/scripts/raid-simulator/coverage.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rust-coverage
+          path: |
+            cov.tar.gz
+            reports/coverage.xml
+
+  check-go:
+    needs: [setup, build-go-runtime]
+    if: needs.setup.outputs.go == 'true' && !failure() && !cancelled()
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ needs.setup.outputs.go_image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+      - run: go version
+      - run: .github/scripts/metrics-gateway/fmt.sh
+      - run: .github/scripts/metrics-gateway/lint.sh
+      - run: .github/scripts/metrics-gateway/audit.sh
+      - run: .github/scripts/metrics-gateway/tests.sh
+      - run: .github/scripts/metrics-gateway/coverage.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: go-coverage
+          path: services/metrics-gateway/coverage.out
+
+  no-code-gate:
+    needs: setup
+    if: needs.setup.outputs.any_code == 'false' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: .github/scripts/shared/no-code-gate.sh
+
+  build-push-rust:
+    needs: [setup, check-rust]
+    if: >-
+      !failure() && !cancelled() &&
+      (
+        startsWith(github.ref, 'refs/tags/') ||
+        (github.ref == 'refs/heads/master' && needs.setup.outputs.rust == 'true')
+      )
+    runs-on: ubuntu-latest
+    env:
+      CI_REGISTRY_IMAGE: ${{ needs.setup.outputs.image_repo }}
+      IMAGE_NAME: "raid-simulator"
+      DOCKER_BUILD_CONTEXT: "."
+      DOCKERFILE_PATH: "services/raid-simulator/Dockerfile"
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          export CI_COMMIT_SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-8)
+          .github/scripts/shared/docker-build-and-push.sh
+
+  build-push-go:
+    needs: [setup, check-go]
+    if: >-
+      !failure() && !cancelled() &&
+      (
+        startsWith(github.ref, 'refs/tags/') ||
+        (github.ref == 'refs/heads/master' && needs.setup.outputs.go == 'true')
+      )
+    runs-on: ubuntu-latest
+    env:
+      CI_REGISTRY_IMAGE: ${{ needs.setup.outputs.image_repo }}
+      IMAGE_NAME: "metrics-gateway"
+      DOCKER_BUILD_CONTEXT: "."
+      DOCKERFILE_PATH: "services/metrics-gateway/Dockerfile"
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          export CI_COMMIT_SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-8)
+          .github/scripts/shared/docker-build-and-push.sh
+
+  release:
+    needs: [build-push-rust, build-push-go]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: .github/scripts/shared/release-from-tag.sh
