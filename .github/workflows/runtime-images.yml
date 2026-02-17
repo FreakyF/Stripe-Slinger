@@ -1,0 +1,59 @@
+name: Runtime Images
+
+on:
+  workflow_call:
+    inputs:
+      CI_GO_VERSION:
+        required: true
+        type: string
+      CI_RUST_VERSION:
+        required: true
+        type: string
+      repo_lower:
+        required: true
+        type: string
+      run_go:
+        required: true
+        type: boolean
+      run_rust:
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  metrics-gateway-runtime-image:
+    if: ${{ inputs.run_go }}
+    runs-on: ubuntu-latest
+    env:
+      CI_GO_VERSION: ${{ inputs.CI_GO_VERSION }}
+      CI_REGISTRY: ghcr.io
+      CI_REGISTRY_IMAGE: ghcr.io/${{ inputs.repo_lower }}
+      CI_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      CI_REGISTRY_USER: ${{ github.actor }}
+      CI_JOB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch scripts for GHCR
+        run: sed -i 's/gitlab-ci-token/${CI_REGISTRY_USER}/g' .gitlab/ci/shared/scripts/*.sh
+      - name: Build Go Runtime Image
+        run: .gitlab/ci/shared/scripts/build-golang-runtime-image.sh
+
+  raid-simulator-runtime-image:
+    if: ${{ inputs.run_rust }}
+    runs-on: ubuntu-latest
+    env:
+      CI_RUST_VERSION: ${{ inputs.CI_RUST_VERSION }}
+      CI_REGISTRY: ghcr.io
+      CI_REGISTRY_IMAGE: ghcr.io/${{ inputs.repo_lower }}
+      CI_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      CI_REGISTRY_USER: ${{ github.actor }}
+      CI_JOB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch scripts for GHCR
+        run: sed -i 's/gitlab-ci-token/${CI_REGISTRY_USER}/g' .gitlab/ci/shared/scripts/*.sh
+      - name: Build Rust Runtime Image
+        run: .gitlab/ci/shared/scripts/build-rust-runtime-image.sh

@@ -1,0 +1,100 @@
+name: Metrics Gateway Checks
+
+on:
+  workflow_call:
+    inputs:
+      CI_GO_VERSION:
+        required: true
+        type: string
+      repo_lower:
+        required: true
+        type: string
+      is_master:
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  GO_PROJECT_DIR: "services/metrics-gateway"
+  CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+  CI_PIPELINE_SOURCE: ${{ github.event_name == 'pull_request' && 'merge_request_event' || github.event_name == 'schedule' && 'schedule' || 'push' }}
+  CI_MERGE_REQUEST_TARGET_BRANCH_NAME: ${{ github.base_ref }}
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ inputs.repo_lower }}/golang-runtime:go-${{ inputs.CI_GO_VERSION }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: chown -R ci:ci $GITHUB_WORKSPACE
+      - run: runuser -u ci -- .gitlab/ci/metrics-gateway/scripts/fmt.sh
+
+  lint:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ inputs.repo_lower }}/golang-runtime:go-${{ inputs.CI_GO_VERSION }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: chown -R ci:ci $GITHUB_WORKSPACE
+      - run: runuser -u ci -- .gitlab/ci/metrics-gateway/scripts/lint.sh
+
+  audit:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ inputs.repo_lower }}/golang-runtime:go-${{ inputs.CI_GO_VERSION }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: chown -R ci:ci $GITHUB_WORKSPACE
+      - run: runuser -u ci -- .gitlab/ci/metrics-gateway/scripts/audit.sh
+
+  tests:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ inputs.repo_lower }}/golang-runtime:go-${{ inputs.CI_GO_VERSION }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: chown -R ci:ci $GITHUB_WORKSPACE
+      - run: runuser -u ci -- .gitlab/ci/metrics-gateway/scripts/tests.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: metrics-gateway-coverage
+          path: services/metrics-gateway/coverage.out
+          retention-days: 1
+
+  coverage:
+    needs: tests
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ inputs.repo_lower }}/golang-runtime:go-${{ inputs.CI_GO_VERSION }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: metrics-gateway-coverage
+          path: services/metrics-gateway
+      - run: chown -R ci:ci $GITHUB_WORKSPACE
+      - run: runuser -u ci -- .gitlab/ci/metrics-gateway/scripts/coverage.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: metrics-gateway-coverage-report
+          path: services/metrics-gateway/coverage.out
+          retention-days: 7

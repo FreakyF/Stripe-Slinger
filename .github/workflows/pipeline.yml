@@ -1,0 +1,130 @@
+name: Pipeline
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+      - 'feature/**'
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - master
+      - develop
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      repo_lower: ${{ steps.repo_name.outputs.repo_lower }}
+      is_tag: ${{ steps.check_tag.outputs.is_tag }}
+      is_master: ${{ steps.check_master.outputs.is_master }}
+    steps:
+      - id: repo_name
+        run: echo "repo_lower=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+      - id: check_tag
+        run: echo "is_tag=${{ startsWith(github.ref, 'refs/tags/') }}" >> $GITHUB_OUTPUT
+      - id: check_master
+        run: echo "is_master=${{ github.ref == 'refs/heads/master' }}" >> $GITHUB_OUTPUT
+
+  changes:
+    runs-on: ubuntu-latest
+    needs: setup
+    outputs:
+      rust: ${{ steps.filter.outputs.rust }}
+      go: ${{ steps.filter.outputs.go }}
+      runtime_rust: ${{ steps.filter.outputs.runtime_rust }}
+      runtime_go: ${{ steps.filter.outputs.runtime_go }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            rust:
+              - 'services/raid-simulator/**/*.rs'
+              - 'services/raid-simulator/**/Cargo.toml'
+              - 'services/raid-simulator/**/Cargo.lock'
+              - 'services/raid-simulator/**/build.rs'
+              - 'services/raid-simulator/**/Dockerfile'
+              - 'services/raid-simulator/**/Makefile'
+              - 'services/raid-simulator/**/*.yml'
+              - 'services/raid-simulator/**/*.yaml'
+              - 'services/raid-simulator/**/*.json'
+            go:
+              - 'services/metrics-gateway/**/*.go'
+              - 'services/metrics-gateway/go.mod'
+              - 'services/metrics-gateway/go.sum'
+              - 'services/metrics-gateway/**/Dockerfile'
+              - 'services/metrics-gateway/**/Makefile'
+              - 'services/metrics-gateway/**/*.yml'
+              - 'services/metrics-gateway/**/*.yaml'
+              - 'services/metrics-gateway/**/*.json'
+            runtime_rust:
+              - '.gitlab/ci/images/rust-runtime/Dockerfile'
+              - '.gitlab/ci/images/rust-runtime/**/*'
+              - '.gitlab/ci/shared/jobs/runtime-image.yml'
+              - '.gitlab/ci/shared/scripts/build-rust-runtime-image.sh'
+            runtime_go:
+              - '.gitlab/ci/images/golang-runtime/Dockerfile'
+              - '.gitlab/ci/images/golang-runtime/**/*'
+              - '.gitlab/ci/shared/jobs/runtime-image.yml'
+              - '.gitlab/ci/shared/scripts/build-golang-runtime-image.sh'
+
+  runtime-images:
+    needs: [setup, changes]
+    if: ${{ needs.changes.outputs.runtime_go == 'true' || needs.changes.outputs.runtime_rust == 'true' || github.event_name == 'schedule' }}
+    uses: ./.github/workflows/runtime-images.yml
+    with:
+      CI_GO_VERSION: '1.25'
+      CI_RUST_VERSION: '1.91'
+      repo_lower: ${{ needs.setup.outputs.repo_lower }}
+      run_go: ${{ needs.changes.outputs.runtime_go == 'true' || github.event_name == 'schedule' }}
+      run_rust: ${{ needs.changes.outputs.runtime_rust == 'true' || github.event_name == 'schedule' }}
+    secrets: inherit
+
+  metrics-gateway-checks:
+    needs: [setup, changes, runtime-images]
+    if: ${{ !failure() && !cancelled() && (needs.changes.outputs.go == 'true' || github.ref == 'refs/heads/master') }}
+    uses: ./.github/workflows/metrics-gateway.yml
+    with:
+      CI_GO_VERSION: '1.25'
+      repo_lower: ${{ needs.setup.outputs.repo_lower }}
+      is_master: ${{ needs.setup.outputs.is_master == 'true' }}
+    secrets: inherit
+
+  raid-simulator-checks:
+    needs: [setup, changes, runtime-images]
+    if: ${{ !failure() && !cancelled() && (needs.changes.outputs.rust == 'true' || github.ref == 'refs/heads/master') }}
+    uses: ./.github/workflows/raid-simulator.yml
+    with:
+      CI_RUST_VERSION: '1.91'
+      repo_lower: ${{ needs.setup.outputs.repo_lower }}
+      is_master: ${{ needs.setup.outputs.is_master == 'true' }}
+    secrets: inherit
+
+  no-code-gate:
+    needs: [setup, changes]
+    if: ${{ needs.changes.outputs.rust == 'false' && needs.changes.outputs.go == 'false' && needs.changes.outputs.runtime_rust == 'false' && needs.changes.outputs.runtime_go == 'false' && github.ref != 'refs/heads/master' && github.event_name != 'schedule' }}
+    uses: ./.github/workflows/no-code-gate.yml
+    secrets: inherit
+
+  build-release:
+    needs: [setup, changes, metrics-gateway-checks, raid-simulator-checks]
+    if: ${{ needs.setup.outputs.is_tag == 'true' || (needs.setup.outputs.is_master == 'true' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.rust == 'true')) }}
+    uses: ./.github/workflows/build-release.yml
+    with:
+      repo_lower: ${{ needs.setup.outputs.repo_lower }}
+      is_tag: ${{ needs.setup.outputs.is_tag == 'true' }}
+      is_master: ${{ needs.setup.outputs.is_master == 'true' }}
+      build_go: ${{ needs.changes.outputs.go == 'true' || needs.setup.outputs.is_tag == 'true' }}
+      build_rust: ${{ needs.changes.outputs.rust == 'true' || needs.setup.outputs.is_tag == 'true' }}
+    secrets: inherit
