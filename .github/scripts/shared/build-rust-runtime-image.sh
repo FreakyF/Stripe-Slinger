@@ -4,7 +4,8 @@ set -eu
 : "${CI_RUST_VERSION:?required}"
 : "${CI_REGISTRY_IMAGE:?required}"
 : "${CI_REGISTRY:?required}"
-: "${CI_JOB_TOKEN:?required}"
+: "${CI_REGISTRY_PASSWORD:?required}"
+: "${CI_REGISTRY_USER:?required}"
 
 RUNTIME_IMAGE_REPO="${RUNTIME_IMAGE_REPO:-$CI_REGISTRY_IMAGE/rust-runtime}"
 RUNTIME_BASE_IMAGE="${RUNTIME_BASE_IMAGE:-rust:${CI_RUST_VERSION}}"
@@ -15,9 +16,9 @@ echo "[rust-runtime-image] Target repo: ${RUNTIME_IMAGE_REPO}"
 
 FILES_HASH="$(
   {
-    find .gitlab/ci/images/rust-runtime -type f -print
-    echo .gitlab/ci/shared/jobs/runtime-image.yml
-    echo .gitlab/ci/shared/scripts/build-rust-runtime-image.sh
+    find .github/images/rust-runtime -type f -print
+    echo .github/workflows/ci.yml
+    echo .github/scripts/shared/build-rust-runtime-image.sh
   } | LC_ALL=C sort |
   while IFS= read -r f; do
     cat "$f"
@@ -27,7 +28,7 @@ FILES_HASH="$(
 echo "[rust-runtime-image] Calculated files hash: ${FILES_HASH}"
 
 echo "[rust-runtime-image] Logging in to registry..."
-echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$CI_REGISTRY" >/dev/null
+echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY" >/dev/null
 
 echo "[rust-runtime-image] Probing base image digest (metadata only)..."
 
@@ -80,9 +81,9 @@ echo "[rust-runtime-image] Building new immutable runtime image..."
 docker build --pull \
   --build-arg RUST_VERSION="$CI_RUST_VERSION" \
   --build-arg CARGO_AUDIT_VERSION="latest" \
-  -f .gitlab/ci/images/rust-runtime/Dockerfile \
+  -f .github/images/rust-runtime/Dockerfile \
   -t "$IMMUTABLE_TAG" \
-  .gitlab/ci/images/rust-runtime
+  .github/images/rust-runtime
 
 echo "[rust-runtime-image] Pushing immutable image ${IMMUTABLE_TAG}..."
 docker push "$IMMUTABLE_TAG"

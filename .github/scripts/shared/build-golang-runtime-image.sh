@@ -4,7 +4,8 @@ set -eu
 : "${CI_GO_VERSION:?CI_GO_VERSION required}"
 : "${CI_REGISTRY_IMAGE:?CI_REGISTRY_IMAGE required}"
 : "${CI_REGISTRY:?CI_REGISTRY required}"
-: "${CI_JOB_TOKEN:?CI_JOB_TOKEN required}"
+: "${CI_REGISTRY_PASSWORD:?CI_REGISTRY_PASSWORD required}"
+: "${CI_REGISTRY_USER:?CI_REGISTRY_USER required}"
 
 GO_RUNTIME_IMAGE_REPO="${GO_RUNTIME_IMAGE_REPO:-$CI_REGISTRY_IMAGE/golang-runtime}"
 GO_RUNTIME_BASE_IMAGE="${GO_RUNTIME_BASE_IMAGE:-golang:${CI_GO_VERSION}}"
@@ -15,9 +16,9 @@ echo "[golang-runtime-image] Target repo: ${GO_RUNTIME_IMAGE_REPO}"
 
 FILES_HASH="$(
   {
-    find .gitlab/ci/images/golang-runtime -type f -print
-    echo .gitlab/ci/shared/jobs/runtime-image.yml
-    echo .gitlab/ci/shared/scripts/build-golang-runtime-image.sh
+    find .github/images/golang-runtime -type f -print
+    echo .github/workflows/ci.yml
+    echo .github/scripts/shared/build-golang-runtime-image.sh
   } | LC_ALL=C sort |
   while IFS= read -r f; do
     cat "$f"
@@ -27,7 +28,7 @@ FILES_HASH="$(
 echo "[golang-runtime-image] Calculated files hash: ${FILES_HASH}"
 
 echo "[golang-runtime-image] Logging in to registry..."
-echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$CI_REGISTRY" >/dev/null
+echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY" >/dev/null
 
 echo "[golang-runtime-image] Probing base image digest..."
 docker pull "$GO_RUNTIME_BASE_IMAGE" >/dev/null 2>&1 || true
@@ -75,9 +76,9 @@ fi
 echo "[golang-runtime-image] Building new immutable runtime image..."
 docker build --pull \
   --build-arg GO_VERSION="$CI_GO_VERSION" \
-  -f .gitlab/ci/images/golang-runtime/Dockerfile \
+  -f .github/images/golang-runtime/Dockerfile \
   -t "$IMMUTABLE_TAG" \
-  .gitlab/ci/images/golang-runtime
+  .github/images/golang-runtime
 
 echo "[golang-runtime-image] Pushing immutable image ${IMMUTABLE_TAG}..."
 docker push "$IMMUTABLE_TAG"
