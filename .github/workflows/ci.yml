@@ -5,14 +5,14 @@ on:
     branches:
       - master
       - develop
-      - 'feature/**'
+      - "feature/**"
     tags:
-      - '*'
+      - "*"
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: "0 0 * * *"
 
 env:
   CI_REGISTRY: ghcr.io
@@ -92,7 +92,6 @@ jobs:
 
   build-rust-runtime:
     needs: setup
-    # Run always (unless cancelled), relying on script optimization
     runs-on: ubuntu-latest
     env:
       CI_REGISTRY_IMAGE: ${{ needs.setup.outputs.image_repo }}
@@ -102,7 +101,6 @@ jobs:
 
   build-go-runtime:
     needs: setup
-    # Run always (unless cancelled), relying on script optimization
     runs-on: ubuntu-latest
     env:
       CI_REGISTRY_IMAGE: ${{ needs.setup.outputs.image_repo }}
@@ -112,7 +110,14 @@ jobs:
 
   check-rust:
     needs: [setup, build-rust-runtime]
-    if: needs.setup.outputs.rust == 'true' && !failure() && !cancelled()
+    if: >-
+      !failure() && !cancelled() &&
+      (
+        github.ref == 'refs/heads/master' ||
+        github.ref == 'refs/heads/develop' ||
+        github.event_name == 'pull_request' ||
+        needs.setup.outputs.rust == 'true'
+      )
     runs-on: ubuntu-latest
     container:
       image: ${{ needs.setup.outputs.rust_image }}
@@ -138,7 +143,14 @@ jobs:
 
   check-go:
     needs: [setup, build-go-runtime]
-    if: needs.setup.outputs.go == 'true' && !failure() && !cancelled()
+    if: >-
+      !failure() && !cancelled() &&
+      (
+        github.ref == 'refs/heads/master' ||
+        github.ref == 'refs/heads/develop' ||
+        github.event_name == 'pull_request' ||
+        needs.setup.outputs.go == 'true'
+      )
     runs-on: ubuntu-latest
     container:
       image: ${{ needs.setup.outputs.go_image }}
@@ -173,8 +185,9 @@ jobs:
     if: >-
       !failure() && !cancelled() &&
       (
-        startsWith(github.ref, 'refs/tags/') ||
-        (github.ref == 'refs/heads/master' && needs.setup.outputs.rust == 'true')
+        github.ref == 'refs/heads/master' ||
+        github.ref == 'refs/heads/develop' ||
+        startsWith(github.ref, 'refs/tags/')
       )
     runs-on: ubuntu-latest
     env:
@@ -193,8 +206,9 @@ jobs:
     if: >-
       !failure() && !cancelled() &&
       (
-        startsWith(github.ref, 'refs/tags/') ||
-        (github.ref == 'refs/heads/master' && needs.setup.outputs.go == 'true')
+        github.ref == 'refs/heads/master' ||
+        github.ref == 'refs/heads/develop' ||
+        startsWith(github.ref, 'refs/tags/')
       )
     runs-on: ubuntu-latest
     env:
